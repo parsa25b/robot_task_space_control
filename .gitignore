@@ -1,5 +1,6 @@
 .venv
-.devcontainer
 robo_control/
-test/
+test/pyproject.toml
 ik_quadratic_programming.py
+phoenix/
+src/__pycache__
