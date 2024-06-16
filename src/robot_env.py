@@ -1,6 +1,5 @@
 from gymnasium import spaces
 from gymnasium.envs.mujoco import MujocoEnv
-import mujoco
 
 import numpy as np
 from pathlib import Path
