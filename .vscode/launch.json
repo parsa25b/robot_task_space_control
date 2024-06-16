@@ -1,0 +1,11 @@
+{
+    "configurations": [
+        {
+            "name": "Python Debugger: Current File with Arguments",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "src/simulate.py",
+            "console": "integratedTerminal",
+        }
+    ]
+}
