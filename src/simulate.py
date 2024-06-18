@@ -56,8 +56,8 @@ def simulate(args):
             qpos = ik.calculate(ee_reference_pose, site_id)  # calculate the qpos
             env.step(action=qpos)
 
-            print(f"ee_reference_pose: {ee_reference_pose}")
-            print(f"data.site_xpos={env.data.site_xpos}")
+            # print(f"ee_reference_pose: {ee_reference_pose}")
+            # print(f"data.site_xpos={env.data.site_xpos}")
             viewer.render()
             # Slow down the rendering
             time.sleep(inter_frame_sleep)
