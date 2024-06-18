@@ -24,3 +24,4 @@ Special thanks to the [MuJoCo Menagerie](https://github.com/google-deepmind/mujo
 ## References
 
 - Khatib, O., 1987. A unified approach for motion and force control of robot manipulators: The operational space formulation. IEEE Journal on Robotics and Automation, 3(1), pp.43-53.
+- [kevinzakka mjctrl](https://github.com/kevinzakka/mjctrl/tree/main) 
