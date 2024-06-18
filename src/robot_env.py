@@ -100,5 +100,8 @@ class RobotEnv(MujocoEnv):
     def get_qpos(self) -> np.ndarray:
         return self.data.qpos
 
+    def set_ctrl(self, ctrl: np.ndarray):
+        self.data.ctrl = ctrl
+
     def set_qpos(self, qpos: np.ndarray):
         self.data.qpos = qpos
