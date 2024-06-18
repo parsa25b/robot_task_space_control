@@ -2,6 +2,7 @@ import argparse
 import time
 import mujoco_viewer
 from pathlib import Path
+from ik_levenberg_marquardt import LevenbegMarquardtIK
 from ik_gradient_descent import GradientDescentIK
 import mujoco
 import numpy as np
@@ -29,11 +30,8 @@ def simulate(args):
     env = RobotEnv(model_path=Path(args.model_path))
     inter_frame_sleep = 0.01
 
-    damping = 0.15
-    # ik = LevenbegMarquardtIK(
-    #     env.model, env.data, step_size, tol, jacp, jacr, damping, maxiter=50
-    # )
-    ik = GradientDescentIK(env)
+    # ik = GradientDescentIK(env)
+    ik = LevenbegMarquardtIK(env)
 
     # End-effector we wish to control.
     site_name = "end_effector"
@@ -55,8 +53,8 @@ def simulate(args):
             )
 
             # Inverse Kinematics calculations
-            ik.calculate(ee_reference_pose, site_id)  # calculate the qpos
-            env.step(action=env.data.qpos)
+            qpos = ik.calculate(ee_reference_pose, site_id)  # calculate the qpos
+            env.step(action=qpos)
 
             print(f"ee_reference_pose: {ee_reference_pose}")
             print(f"data.site_xpos={env.data.site_xpos}")
