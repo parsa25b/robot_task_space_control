@@ -36,10 +36,12 @@ python robot_control.py --robot-model h1
 
 ## Video Demo
 
-A video demonstration of the UR5e robot end effector control can be found here:
+A video demonstration of the "UR5e" end effector control can be found here:
+
 ![UR5e Task Space Control](https://github.com/parsa25b/robo_motion_control/blob/main/images/ur5e_task_space_control.gif)
 
-A video demonstration of the h1 right arm task space control can be found here:
+A video demonstration of the "h1" right arm task space control can be found here:
+
 ![h1 right arm Task Space Control](https://github.com/parsa25b/robo_motion_control/blob/main/images/ur5e_task_space_control.gif)
 
 ## Acknowledgments
