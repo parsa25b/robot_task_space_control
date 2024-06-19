@@ -32,7 +32,7 @@ class LevenbegMarquardtIK:
                 self.env.joint_range[i][0], min(q[i], self.env.joint_range[i][1])
             )
 
-    def calculate(self, goal, site_id, maxiter=5):
+    def calculate(self, goal, site_id, maxiter=10):
         """
         Calculate the desired joint angles for a given goal full pose.
 
@@ -66,7 +66,8 @@ class LevenbegMarquardtIK:
         while iter <= maxiter:
             # Calculate Jacobian
             jac = self.env.get_jacobian(site_id=site_id)
-
+            jac = jac[:3]
+            error = error[:3]
             # Calculate delta of joint q
             n = jac.shape[1]
             I = np.identity(n)
