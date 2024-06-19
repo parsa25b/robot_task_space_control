@@ -27,7 +27,7 @@ def simulate(args):
     """
 
     # Environment setup
-    env = RobotEnv(model_path=Path(args.model_path))
+    env = RobotEnv(model_path=Path("src/assets/" + args.robot_model + "/scene.xml"))
     inter_frame_sleep = 0.01
 
     # ik = GradientDescentIK(env)
@@ -57,7 +57,7 @@ def simulate(args):
             env.step(action=qpos)
 
             # print(f"ee_reference_pose: {ee_reference_pose}")
-            # print(f"data.site_xpos={env.data.site_xpos}")
+            # print(f"data.site_xpos={env.data.site_xquat(site_id)}")
             viewer.render()
             # Slow down the rendering
             time.sleep(inter_frame_sleep)
@@ -68,10 +68,10 @@ def simulate(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--model_path",
+        "--robot-model",
         type=str,
-        default="src/assets/universal_robots_ur5e/scene.xml",
-        help="Path to the robot model",
+        default="universal_robots_ur5e",
+        help="Name of the robot model",
     )
     args = parser.parse_args()
 
