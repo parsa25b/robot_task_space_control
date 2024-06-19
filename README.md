@@ -42,7 +42,7 @@ A video demonstration of the "UR5e" end effector control can be found here:
 
 A video demonstration of the "h1" right arm task space control can be found here:
 
-![h1 right arm Task Space Control](https://github.com/parsa25b/robo_motion_control/blob/main/images/ur5e_task_space_control.gif)
+![h1 right arm Task Space Control](https://github.com/parsa25b/robot_task_space_control/blob/main/images/h1_right_arm_task_space_control.gif)
 
 ## Acknowledgments
 
