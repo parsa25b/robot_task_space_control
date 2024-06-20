@@ -38,7 +38,7 @@ python robot_control.py --robot-model h1
 
 A video demonstration of the "UR5e" end effector control can be found here:
 
-![UR5e Task Space Control](https://github.com/parsa25b/robo_motion_control/blob/main/images/ur5e_task_space_control.gif)
+![UR5e Task Space Control](https://github.com/nimazareian/quadruped-rl-locomotion/assets/99502915/8afddece-8186-4b9d-8352-594dcef4d53d)
 
 A video demonstration of the "h1" right arm task space control can be found here:
 
