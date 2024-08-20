@@ -4,3 +4,4 @@ test/pyproject.toml
 ik_quadratic_programming.py
 phoenix/
 src/__pycache__
+test/MUJOCO_LOG.TXT
