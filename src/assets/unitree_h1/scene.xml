@@ -25,21 +25,19 @@
     </body>
   </worldbody>
 
-  <!-- <keyframe>
+  <keyframe>
     <key name="home"
       qpos="
-    0 0 0.98
-    1 0 0 0
     0 0 -0.4 0.8 -0.4
     0 0 -0.4 0.8 -0.4
     0
     0 0 0 0
     0 0 0 0"/>
-  </keyframe> -->
+  </keyframe>
 
-  <keyframe> 
+  <!-- <keyframe> 
   <key name="home" 
   qpos="    
   0 0 0 0"/>
-   </keyframe>
+   </keyframe> -->
 </mujoco>
