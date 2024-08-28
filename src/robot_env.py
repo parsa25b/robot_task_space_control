@@ -47,6 +47,7 @@ class RobotEnv:
             self.model, self.data, mode=self.render_mode
         )
         self._reset_simulation()
+        self.forward_dynamics()
 
     def _reset_simulation(self):
         mujoco.mj_resetData(self.model, self.data)
@@ -120,7 +121,7 @@ class RobotEnv:
             site_id,
         )
 
-        return np.vstack((jacp, jacr))
+        return np.vstack((jacp, jacr))[:, self.unlocked_joint_idx]
 
     def get_body_position(self, body_name: str) -> np.ndarray:
         body_id = self.body_name_to_id(body_name)
