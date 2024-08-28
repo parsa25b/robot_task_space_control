@@ -31,40 +31,47 @@ def simulate(args):
     """
 
     unlocked_joints = [
-        "shoulder_pan_joint",
-        "shoulder_lift_joint",
-        "elbow_joint",
-        "wrist_1_joint",
-        "wrist_2_joint",
-        "wrist_3_joint",
+        "torso",
+        "left_shoulder_pitch",
+        "left_shoulder_roll",
+        "left_shoulder_yaw",
+        "left_elbow",
+        "right_shoulder_pitch",
+        "right_shoulder_roll",
+        "right_shoulder_yaw",
+        "right_elbow",
     ]
 
     env = RobotEnv(
         model_path=Path("src/assets/" + args.robot_model + "/scene.xml"),
         unlocked_joint_name=unlocked_joints,
     )
-
     # ik = GradientDescentIK(env)
     # ik = LevenbegMarquardtIK(env)
     ik = QuadraticProgrammingIK(env)
-    
+
     # End-effector we wish to control.
-    frame_name = "wrist_3_link"
+    frame_name = "left_elbow_link"
     # frame_name = "end_effector"
     mocap_id = env.model.body("target").mocapid[0]
 
     i = 0
+    weight = np.array([1.0, 1.0, 1.0, 0.0, 0.0, 0.0])
     while True:
-        env.data.mocap_pos[mocap_id][:2] = circle(i * env.timestep, 0.1, 0.5, -0.2, 1)[
+        env.add_marker(
+            env.data.body(env.body_name_to_id(frame_name)).xpos,
+            label="left_elbow",
+            marker_size=0.05,
+        )
+
+        env.data.mocap_pos[mocap_id][:2] = circle(i * env.timestep, 0.1, 0.1, 0.3, 0.5)[
             :2
         ]
         ee_reference_pose = np.concatenate(
             (env.data.mocap_pos[mocap_id], env.data.mocap_quat[mocap_id])
         )
 
-        qpos = ik.calculate(
-            ee_reference_pose, frame_name, weight=np.ones(6) * 5, type="body"
-        )
+        qpos = ik.calculate(ee_reference_pose, frame_name, weight * 1, type="body")
         env.set_qpos(qpos)
         env.forward_dynamics()
 
@@ -77,7 +84,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--robot-model",
         type=str,
-        default="universal_robots_ur5e",
+        default="unitree_h1",
         help="Name of the robot model",
     )
     args = parser.parse_args()
