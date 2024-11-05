@@ -7,31 +7,23 @@ A repository for various robot motion control.
 To install the required packages, you can use the following command:
 
 ```bash
-pip install -r requirements.txt
+pip install .
 ```
 
 Ensure you have Python and pip installed on your system. The `requirements.txt` file should contain all the dependencies needed to run the project.
 
-## Running the Code
+## Running the IK Example
 
 To run the code, use the following command:
 
+### H1 Robot:
+
 ```bash
-python simulate.py --robot-model <robot_model_name>
+python mujoco_robot_control/examples/inverse_kinematic_h1.py
 ```
-
-The `--robot-model` argument is optional and defaults to `"universal_robots_ur5e"`.
-
-For example, to run the script with the default robot model, use:
-
+### UR5e Robot:
 ```bash
-python robot_control.py
-```
-
-Or to specify a different robot model:
-
-```bash
-python robot_control.py --robot-model h1
+python mujoco_robot_control/examples/inverse_kinematic_ur5e.py
 ```
 
 ## Video Demo
