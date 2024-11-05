@@ -1,5 +1,0 @@
-numpy
-mujoco==3.1.5
-imageio
-mujoco-python-viewer==0.1.4
-osqp

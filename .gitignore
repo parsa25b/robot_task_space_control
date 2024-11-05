@@ -4,3 +4,7 @@ test/pyproject.toml
 phoenix/
 src/__pycache__
 test/MUJOCO_LOG.TXT
+mujoco_robot_control.egg-info
+build/
+mujoco_robot_control/__pycache__
+mujoco_robot_control/mujoco_robot_control.egg-info

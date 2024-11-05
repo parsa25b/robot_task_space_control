@@ -1,8 +1,8 @@
 import numpy as np
 import osqp
-from robot_env import RobotEnv
 from scipy import sparse
 from scipy.spatial.transform import Rotation as R
+from mujoco_robot_control.robot_env import RobotEnv
 
 
 # Levenberg-Marquardt method
@@ -11,26 +11,24 @@ class QuadraticProgrammingIK:
     Quadratic Programming Inverse Kinematics solver.
 
     Args:
+        env (RobotEnv): The robot environment.
     """
 
     def __init__(self, env: RobotEnv):
         self.env = env
-        self.step_size = 1
+        self.penalize_joint_velocity = 1e-1
+        self.penalize_delta_joint_velocity = 1e-3
+        self.penalize_joint_position = 1e-1
+        self.previous_ik_qpos = np.zeros(self.env.number_of_unlocked_joints)
         self.xd_previous = None
-
-    def check_joint_limits(self, q):
-        """Check if the joints are within their limits."""
-        for i in range(len(q)):
-            q[i] = max(
-                self.env.joint_range[i][0], min(q[i], self.env.joint_range[i][1])
-            )
+        self.delta_q_previous = 0
 
     def calculate(
         self,
         goal: np.ndarray,
         frame_name: str,
         weight: np.ndarray = np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0]),
-        type: str = "body",
+        frame_type: str = "body",
         number_of_iterations=1,
         only_position=True,
     ):
@@ -39,101 +37,105 @@ class QuadraticProgrammingIK:
 
         Args:
             goal (numpy.ndarray): The desired full pose.
-            site_name (str): The name of the site to control.
+            frame_name (str): The name of the frame to control.
+            weight (numpy.ndarray): The weight for each dimension of the error.
+            frame_type (str): The type of frame to control (either 'body' or 'site').
+            number_of_iterations (int): The number of iterations to run the IK solver.
+            only_position (bool): Whether to only control the position or both position and orientation
         """
+
         xd = np.zeros(6)
         xd[:3] = goal[:3]
         quaternion = [goal[6], goal[3], goal[4], goal[5]]
         xd[3:] = R.from_quat(quaternion).as_rotvec()
         if self.xd_previous is None:
-            self.xd_previous = xd
-
+            self.xd_previous = xd.copy()
         xddot = (xd - self.xd_previous) / self.env.timestep
 
-        weight = np.diag(weight)
-        error = np.zeros(6)
-        error_pos = error[:3]
-        error_ori = error[3:]
-        site_quat_conj = np.zeros(4)
-        error_quat = np.zeros(4)
-        site_quat = np.zeros(4)
-
-        if type == "body":
-            current_pos = self.env.get_body_position(frame_name)
-            site_quat_conj = self.env.get_body_orientation(frame_name)
-            site_quat_conj[0] = -site_quat_conj[0]
-        elif type == "site":
-            current_pos = self.env.get_site_position(frame_name)
-            site_quat = self.env.get_site_quaternion(frame_name)
-            site_quat_conj = self.neg_quat(site_quat)
-        else:
-            raise ValueError("Invalid type. Please use 'body' or 'site'.")
-
-        error_pos = np.subtract(goal[:3], current_pos)
-        error_quat = self.mul_quat(goal[3:], site_quat_conj)
-        error_ori = self.quat_to_velocity(error_quat)
-        error = np.concatenate((error_pos, error_ori))
-
-        iteration = 0
         qpos_before_ik = self.env.get_qpos().copy()
-        while iteration < number_of_iterations:
+        for _ in range(number_of_iterations):
+            error = self._caclculate_error(frame_name, goal, frame_type)
             # Calculate Jacobian
-            if type == "body":
+            if frame_type == "body":
                 jac = self.env.get_jacobian(frame_name)
-            elif type == "site":
+            elif frame_type == "site":
                 jac = self.env.get_site_jacobian(frame_name)
 
             if only_position:
                 jac = jac[:3]
                 error = error[:3]
                 xddot = xddot[:3]
+                weight = weight[:3]
+                weight = np.diag(weight)
+            else:
+                weight = np.diag(weight)
 
-            A = jac
-            b = xddot + error
-            P = np.dot(A.T, A)
-            P += 1e-3 * np.eye(P.shape[0])
+            error = np.clip(error, -0.1, 0.1)
+            A = weight @ jac
+            b = weight @ error * 10
+            P = A.T @ A
+            P += self.penalize_joint_velocity * np.eye(P.shape[0])
+            # regularization term on joint velocities
+            P += self.penalize_delta_joint_velocity * np.eye(P.shape[0])
+            # regularization term on joint positions
+            P += self.penalize_joint_position * np.eye(P.shape[0])
             P = sparse.csc_matrix(P)
-            q = -np.dot(A.T, b)
+            q = -A.T @ b
+            q -= self.penalize_delta_joint_velocity * self.delta_q_previous
+            q += self.penalize_joint_position * self.previous_ik_qpos
+            l = (self.env.joint_range[:, 0] - self.previous_ik_qpos) / self.env.timestep
+            u = (self.env.joint_range[:, 1] - self.previous_ik_qpos) / self.env.timestep
+            C = sparse.eye(len(q), format="csc")
             # Solve QP
             osqp_solver = osqp.OSQP()
-            osqp_solver.setup(P=P, q=q, verbose=False)
+            osqp_solver.setup(P=P, q=q, l=l, u=u, A=C, verbose=False)
             result = osqp_solver.solve()
+
             delta_q = result.x
             if result.info.status != "solved":
-                raise ValueError("OSQP did not find a solution.")
+                return self.previous_ik_qpos, self.delta_q_previous / self.env.timestep
 
             # Compute next step
-            qpos = self.env.get_qpos() + self.step_size * delta_q * self.env.timestep
-
-            self.check_joint_limits(qpos)
+            qpos = self.env.get_qpos() + delta_q * self.env.timestep
             self.env.set_qpos(qpos=qpos)
-
             self.env.forward_dynamics()
 
-            if type == "body":
-                current_pos = self.env.get_body_position(frame_name)
-                site_quat_conj = self.env.get_body_orientation(frame_name)
-                site_quat_conj[0] = -site_quat_conj[0]
-            elif type == "site":
-                current_pos = self.env.get_site_position(frame_name)
-                site_quat = self.env.get_site_quaternion(frame_name)
-                site_quat_conj = self.neg_quat(site_quat)
-            else:
-                raise ValueError("Invalid type. Please use 'body' or 'site'.")
-
-            error_pos = np.subtract(goal[:3], current_pos)
-            error_quat = self.mul_quat(goal[3:], site_quat_conj)
-            error_ori = self.quat_to_velocity(error_quat)
-            error = np.concatenate((error_pos, error_ori))
-
-            iteration += 1
-
         self.env.set_qpos(qpos=qpos_before_ik)
+        self.env.forward_dynamics()
+
+        self.delta_q_previous = delta_q
         self.xd_previous = xd
-        return qpos
+        self.previous_ik_qpos = qpos
+
+        return qpos, delta_q / self.env.timestep
+
+    def _caclculate_error(self, frame_name, goal, frame_type):
+        """
+        Calculate the error between the current pose and the goal pose.
+        """
+
+        if frame_type == "body":
+            current_pos = self.env.get_body_position(frame_name)
+            site_quat = self.env.get_body_orientation(frame_name)
+
+        elif frame_type == "site":
+            current_pos = self.env.get_site_position(frame_name)
+            site_quat = self.env.get_site_quaternion(frame_name)
+            site_quat_conj = self._neg_quat(site_quat)
+
+        else:
+            raise ValueError("Invalid type. Please use 'body' or 'site'.")
+
+        site_quat_conj = self._neg_quat(site_quat)
+        error_pos = goal[:3] - current_pos
+        error_quat = self._mul_quat(goal[3:], site_quat_conj)
+        error_ori = self._quat_to_velocity(error_quat)
+        error = np.concatenate((error_pos, error_ori))
+
+        return error
 
     @staticmethod
-    def quat_to_velocity(error_quat):
+    def _quat_to_velocity(error_quat):
         """
         Converts a quaternion difference into an angular velocity vector.
 
@@ -161,7 +163,7 @@ class QuadraticProgrammingIK:
         return error_ori
 
     @staticmethod
-    def mul_quat(q1, q2):
+    def _mul_quat(q1, q2):
         """
         Multiplies two quaternions.
 
@@ -183,7 +185,7 @@ class QuadraticProgrammingIK:
         return np.array([w, x, y, z])
 
     @staticmethod
-    def neg_quat(quat):
+    def _neg_quat(quat):
         """
         Negates a quaternion (i.e., computes the conjugate).
 

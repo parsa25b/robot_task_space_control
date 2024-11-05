@@ -3,6 +3,7 @@ from pathlib import Path
 import mujoco
 import mujoco_viewer
 import numpy as np
+from mujoco_robot_control.add_mujoco_section import add_mujoco_section_text
 
 DEFAULT_CAMERA_CONFIG = {
     "azimuth": 100.0,
@@ -19,6 +20,8 @@ class RobotEnv:
     def __init__(
         self, model_path: Path, unlocked_joint_name: list, render: bool = True
     ):
+        if ".urdf" in model_path.name:
+            add_mujoco_section_text(model_path, model_path)
         model_path = model_path.absolute().as_posix()
 
         if model_path.startswith(".") or model_path.startswith("/"):
@@ -43,9 +46,10 @@ class RobotEnv:
         self.model = mujoco.MjModel.from_xml_path(self.fullpath)
         self.data = mujoco.MjData(self.model)
         # initialize the viewer
-        self.viewer = mujoco_viewer.MujocoViewer(
-            self.model, self.data, mode=self.render_mode
-        )
+        if self.render_mode == "window":
+            self.viewer = mujoco_viewer.MujocoViewer(
+                self.model, self.data, mode=self.render_mode
+            )
         self._reset_simulation()
         self.forward_dynamics()
 
@@ -147,6 +151,9 @@ class RobotEnv:
     def get_qpos(self) -> np.ndarray:
         return self.data.qpos[self.unlocked_joint_idx]
 
+    def get_qvel(self) -> np.ndarray:
+        return self.data.qvel[self.unlocked_joint_idx]
+
     def get_bias_forces(self) -> np.ndarray:
         return self.data.qfrc_bias[self.unlocked_joint_idx]
 
@@ -157,12 +164,8 @@ class RobotEnv:
         self.data.qpos[self.unlocked_joint_idx] = qpos
 
     def set_state(self, qpos: np.ndarray, qvel: np.ndarray):
-        q_full = self.data.qpos[:]
-        qdot_full = self.data.qvel[:]
-        q_full[self.unlocked_joint_idx] = qpos
-        qdot_full[self.unlocked_joint_idx] = qvel
-        self.data.qpos[:] = q_full
-        self.data.qvel[:] = qdot_full
+        self.data.qpos[self.unlocked_joint_idx] = qpos
+        self.data.qvel[self.unlocked_joint_idx] = qvel
 
     def set_full_state(self, qpos: np.ndarray):
         self.data.qpos = qpos
@@ -211,7 +214,8 @@ class RobotEnv:
         )
 
     def close_renderer(self):
-        self.viewer.close()
+        if self.render_mode == "window":
+            self.viewer.close()
 
     @property
     def number_of_dofs(self):
