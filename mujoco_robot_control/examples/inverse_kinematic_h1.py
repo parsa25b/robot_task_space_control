@@ -49,15 +49,15 @@ def simulate(args):
     # frame_id = env.body_name_to_id(frame_dict["frame_name"])
 
     mocap_id = env.model.body("target").mocapid[0]
-    env.set_timestep(0.02)
+    env.set_timestep(0.005)
 
-    weight = np.array([1.0, 1.0, 1.0, 1.0, 1.0, 1.0])
+    weight = np.array([10.0, 10.0, 10.0, 1.0, 1.0, 1.0])
 
     i = 0
     while True:
         i += 1
         env.data.mocap_pos[mocap_id][:2] = circle(
-            i * env.timestep, 0.1, 0.4, -0.3, 0.2
+            i * env.timestep, 0.1, 0.4, -0.3, 0.5
         )[:2]
 
         env.add_marker(
